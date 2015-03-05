@@ -131,34 +131,3 @@ def add_available_updates(graph):
         graph.node[name]['latest'] = latest
 
     return graph
-
-
-def simple_print(graph):
-    for pkg in graph:
-        node = graph.node[pkg]
-
-        if 'latest' in node:
-            latest = '(Latest: {latest})'.format(**node)
-        else:
-            latest = ''
-
-        print(node['label'], latest)
-
-        for _, req, edge in graph.out_edges([pkg], data=True):
-            req_node = graph.node[req]
-
-            print('  depends on %s (%s is installed)' % (
-                req + ' ' + edge['label'], req_node['version']))
-
-
-if __name__ == '__main__':
-    import sys
-
-    g, t = collect_dependencies(sys.argv[1])
-    if len(sys.argv) > 2:
-        for pkg in sys.argv[2:]:
-            collect_dependencies(pkg, graph=g)
-
-    add_available_updates(g)
-
-    simple_print(g)
