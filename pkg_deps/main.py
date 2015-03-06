@@ -1,50 +1,33 @@
 #!/usr/bin/env python
+import click
+
 from . import collector
+from . import writers
 
 
-usage = """
-pkg_deps: print dependencies and latest versions available.
+@click.command()
+@click.argument('packages', nargs=-1, required=True)
+@click.option('--outdated', is_flag=True, help="Look for outdated packages.")
+@click.option('--human', 'format', flag_value='human', default=True,
+              help="Print results in simple human-readable form.")
+@click.option('--dot', 'format', flag_value='dot',
+              help="Write in the GraphViz 'dot' format.")
+@click.option('--graphml', 'format', flag_value='graphml',
+              help="Write in the XML-based GraphML format.")
+@click.option('--json', 'format', flag_value='json',
+              help="Write in a d3.js-compatible 'node-link' JSON format.")
+def main(packages, outdated, format):
+    """Print dependencies and latest versions available."""
 
-Usage:
-    pkg_deps <package> [<package ...>]
+    graph = None
 
-"""
+    for package in packages:
+        graph, _ = collector.collect_dependencies(package, graph=graph)
 
+    if outdated:
+        collector.add_available_updates(graph)
 
-def main():
-    import sys
-
-    if len(sys.argv) < 2 or sys.argv[1] in ('-h', '--help'):
-        print(usage)
-        sys.exit(1)
-
-    g, t = collector.collect_dependencies(sys.argv[1])
-
-    if len(sys.argv) > 2:
-        for pkg in sys.argv[2:]:
-            collector.collect_dependencies(pkg, graph=g)
-
-    collector.add_available_updates(g)
-
-    simple_print(g)
-
-
-def simple_print(graph):
-    for pkg in graph:
-        node = graph.node[pkg]
-
-        if 'latest' in node:
-            latest = '(Latest: {latest})'.format(**node)
-        else:
-            latest = ''
-
-        print(node['label'], latest)
-
-        for _, req, edge in graph.out_edges([pkg], data=True):
-            req_node = graph.node[req]
-
-            print('  depends on %s (%s is installed)' % (
-                req + ' ' + edge['label'], req_node['version']))
+    getattr(writers, format)(graph)
 
 
 if __name__ == '__main__':

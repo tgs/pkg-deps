@@ -5,7 +5,10 @@ setup(
     name="pkg-deps",
     version=0.1,
     packages=find_packages(),
-    install_requires=['pydot3k', 'networkx'],
+    install_requires=['pydot3k', 'networkx', 'click'],
+    # entry_points based script is really slow (0.5 seconds)
+    # might want to switch to normal script, since windows
+    # version isn't a concern right now
     entry_points={
         'console_scripts': [
             'pkg_deps = pkg_deps.main:main',
