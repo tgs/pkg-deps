@@ -2,6 +2,8 @@ import logging
 import re
 import subprocess
 
+import networkx as nx
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,42 +41,48 @@ def add_available_updates(graph):
         package, current, latest = match.groups()
 
         name = package.lower()
-        if name not in graph.node:
+        data = graph.node.get(name)
+
+        if not data:
             logger.debug("Skipping", name, "not already in dep graph")
             continue
 
-        graph.node[name]['latest'] = latest
+        data['latest'] = latest
+        data['label'] = '%s (latest: %s)' % (latest, data['label'])
 
     return graph
 
 
-def add_missing_pins(graph, top_packages):
-    """Find missing pins - missing if top package depends
-    only indirectly, or does not pin the version."""
+def should_pin_precisely(graph, top_packages):
+    """
+    Annotate requirements from top packages that aren't pinned (==).
 
-    flag_unpinned_dependencies(graph, top_packages)
-
-    add_indirect_dependencies(graph, top_packages)
-
-
-def flag_unpinned_dependencies(graph, top_packages):
+    This sets ``error_not_precise=True`` in the edge data, and
+    modifies the edge label.
+    """
     for src, dest, data in graph.out_edges(top_packages, data=True):
         if not data['is_pin']:
-            data['error_unpinned'] = True
-            data['label'] = data['label'] + ' UNPINNED'
+            data['error_not_precise'] = True
+            data['label'] = 'PIN NOT PRECISE (%s)' % data['label']
 
 
-def add_indirect_dependencies(graph, top_packages):
-    direct = set(dest for src, dest in graph.out_edges(top_packages))
+def should_pin_all(graph, top_packages):
+    """
+    Add missing requirements from top packages to "grandchild" dependencies.
+
+    If prj_A depends on B, which depends on C, but prj_A hasn't declared
+    a dependency on C, this adds that edge to the graph, with the edge
+    attribute ``error_indirect=True`` and an alarming label.
+    """
 
     for package in top_packages:
-        for dest in graph.successors_iter(package):
-            print('Considering', dest)
+        direct = set(dest for src, dest in graph.out_edges([package]))
+        for dest in nx.descendants(graph, package):
             if dest not in direct:
-                print('Adding', dest)
                 node_data = graph.node[dest]
                 graph.add_edge(
                     package,
                     dest,
                     error_indirect=True,
-                    label='MISSING PIN ==' + node_data['version'])
+                    is_pin=True,
+                    label='MISSING PIN (==%s)' % node_data['version'])
