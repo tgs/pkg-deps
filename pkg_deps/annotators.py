@@ -48,7 +48,7 @@ def add_available_updates(graph):
             continue
 
         data['latest'] = latest
-        data['label'] = '%s (latest: %s)' % (latest, data['label'])
+        data['label'] = '%s (latest: %s)' % (data['label'], latest)
 
     return graph
 
