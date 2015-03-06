@@ -14,4 +14,5 @@ setup(
             'pkg_deps = pkg_deps.main:main',
         ],
     },
+    test_suite='tests.tests',
 )
