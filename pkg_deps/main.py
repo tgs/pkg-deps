@@ -1,9 +1,20 @@
 #!/usr/bin/env python
+import logging
+
 import click
 
 from . import collector
 from . import annotators
 from . import writers
+
+
+_log_levels = [
+    logging.CRITICAL,
+    logging.ERROR,
+    logging.WARNING,
+    logging.INFO,
+    logging.DEBUG,
+]
 
 
 @click.command()
@@ -26,8 +37,19 @@ from . import writers
 @click.option('--should-pin-all', is_flag=True,
               help="""Annotate packages that the top-level package depends on
               indirectly but not directly.""")
-def main(packages, outdated, format, precise_pin, should_pin_all):
+@click.option('--verbose', '-v', count=True,
+              help="Control the logging level.")
+@click.option('--quiet', '-q', count=True,
+              help="Control the logging level.")
+def main(packages, outdated, format, precise_pin, should_pin_all, verbose,
+         quiet):
     """Print dependencies and latest versions available."""
+
+    log_level_requested = verbose - quiet + 2  # default is WARNING
+
+    logging.basicConfig(
+        format='%(levelname)s: %(message)s',
+        level=_log_levels[min(log_level_requested, len(_log_levels) - 1)])
 
     graph = None
 

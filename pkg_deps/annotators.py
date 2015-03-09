@@ -35,7 +35,7 @@ def add_available_updates(graph):
     for line in outdated.splitlines():
         match = line_re.match(line)
         if not match:
-            logger.debug("Skipping line ", line)
+            logger.debug("Skipping line: %s", line)
             continue
 
         package, current, latest = match.groups()
@@ -44,7 +44,9 @@ def add_available_updates(graph):
         data = graph.node.get(name)
 
         if not data:
-            logger.debug("Skipping", name, "not already in dep graph")
+            logger.info("Skipping outdated package %s,"
+                        " not already in dep graph",
+                        name)
             continue
 
         data['latest'] = latest
