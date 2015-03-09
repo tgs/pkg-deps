@@ -40,10 +40,10 @@ class MissingPinsTestCase(unittest.TestCase):
         add_node(graph, 'xbox', '360')
         add_edge(graph, 'prj', 'xbox==360')
 
-        ann.flag_unpinned_dependencies(graph, ['prj'])
+        ann.should_pin_precisely(graph, ['prj'])
 
-        self.assertTrue('error_unpinned' in graph['prj']['things'])
-        self.assertFalse('error_unpinned' in graph['prj']['xbox'])
+        self.assertTrue('error_not_precise' in graph['prj']['things'])
+        self.assertFalse('error_not_precise' in graph['prj']['xbox'])
 
     def test_should_pin_all(self):
         # Test that we can detect when a top-level package indirectly depends
