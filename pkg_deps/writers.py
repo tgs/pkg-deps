@@ -20,6 +20,7 @@ def human(graph):
 _dot_colors = {
     'error_not_precise': '#bb0000',
     'error_indirect': '#bb6600',
+    'error_cycle': '#bb0066',
 }
 
 
