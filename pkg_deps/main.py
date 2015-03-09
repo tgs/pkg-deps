@@ -59,6 +59,8 @@ def main(packages, outdated, format, precise_pin, should_pin_all, verbose,
         graph, top = collector.collect_dependencies(package, graph=graph)
         good_package_names.append(top)
 
+    annotators.check_dag(graph)
+
     if outdated:
         annotators.add_available_updates(graph)
 

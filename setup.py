@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pkg-deps",
-    version=0.2,
+    version="0.3",
     packages=find_packages(),
     install_requires=['pydot3k', 'networkx', 'click'],
     # entry_points based script is really slow (0.5 seconds)

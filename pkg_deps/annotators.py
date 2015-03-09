@@ -55,6 +55,20 @@ def add_available_updates(graph):
     return graph
 
 
+def check_dag(graph):
+    "Make sure the dependency graph is acyclic."
+
+    cycles = list(nx.simple_cycles(graph))
+
+    if cycles:
+        logger.warning("There are circular dependencies!")
+
+    for nodelist in cycles:
+        for i in range(len(nodelist)):
+            # -1 = index of last element in nodelist
+            graph[nodelist[i - 1]][nodelist[i]]['error_cycle'] = 1
+
+
 def should_pin_precisely(graph, top_packages):
     """
     Annotate requirements from top packages that aren't pinned (==).

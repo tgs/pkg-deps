@@ -78,3 +78,20 @@ class MissingPinsTestCase(unittest.TestCase):
 
         self.assertIn('joist', graph['sit'].keys())
         self.assertNotIn('error_indirect', graph['sit']['joist'])
+
+    def test_check_dag(self):
+        graph = nx.DiGraph()
+
+        add_node(graph, "believing", "3.7")
+        add_node(graph, "seeing", "4.22")
+        add_node(graph, "narcissism", "100")
+
+        add_edge(graph, "believing", "seeing>3")
+        add_edge(graph, "seeing", "believing")
+        add_edge(graph, "narcissism", "narcissism")
+
+        ann.check_dag(graph)
+
+        self.assertIn('error_cycle', graph['seeing']['believing'])
+        self.assertIn('error_cycle', graph['believing']['seeing'])
+        self.assertIn('error_cycle', graph['narcissism']['narcissism'])
