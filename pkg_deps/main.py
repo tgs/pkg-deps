@@ -25,9 +25,6 @@ _log_levels = [
 @click.option('--dot', 'format', flag_value='dot',
               help="""Write in the GraphViz 'dot' format, for direct
               visualization.""")
-@click.option('--graphml', 'format', flag_value='graphml',
-              help="""Write in the XML-based GraphML format, for use with Gephi
-              or other graph programs.""")
 @click.option('--json', 'format', flag_value='json',
               help="""Write in a 'node-link' JSON format, for use with other
               Python tools or d3.js.""")

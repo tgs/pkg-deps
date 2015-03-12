@@ -3,58 +3,87 @@ import networkx as nx
 from networkx.readwrite.json_graph import node_link
 import sys
 
+from . import annotators as ann
+
+
+def human_format_problems(obj, prefix_if_any='- '):
+    problems = ann.failed_checks(obj)
+    if not problems:
+        return ''
+
+    return prefix_if_any + '; '.join(
+        (': '.join((check, message)) if message else check)
+        for check, message in problems.items())
+
 
 def human(graph):
-    for pkg in graph:
-        node = graph.node[pkg]
+    print("# Dependency tree starting with these packages:")
+    print("# ", "   ".join(graph.graph['query packages']))
+    print("# Checked for:", ", ".join(ann.graph_checks(graph)))
 
-        print(node['label'])
+    for pkg in nx.topological_sort(graph, sorted(graph)):
+        node_data = graph.node[pkg]
 
-        for _, req, edge in graph.out_edges([pkg], data=True):
-            req_node = graph.node[req]
+        print(pkg, human_format_problems(node_data))
 
-            print('  depends on %s (%s is installed)' % (
-                req + ' ' + edge['label'], req_node['version']))
+        for src, dest, data in sorted(graph.out_edges([pkg], data=True)):
+            problems = human_format_problems(data)
+
+            print('  depends on %s (%s is installed) %s' % (
+                data['requirement'], dest, problems))
 
 
 _dot_colors = {
-    'error_not_precise': '#bb0000',
-    'error_indirect': '#bb6600',
-    'error_cycle': '#bb0066',
+    'not precise': '#bb0000',
+    'missing pin': '#bb6600',
+    'cycle': '#bb0066',
+    'outdated': '#0000bb',
 }
 
 
 def dot(graph):
-    # Copy so we can add display information
-    graph = nx.DiGraph(graph)
-
+    # Set colors and labels for edges
     for source, dest, data in graph.edges_iter(data=True):
-        for key in data:
-            if key in _dot_colors:
-                data['color'] = _dot_colors[key]
+        for check in ann.failed_checks(data):
+            if check in _dot_colors:
+                data['color'] = _dot_colors[check]
                 break
 
-        if data['is_pin']:
+        if '==' in data['requirement']:
             data['style'] = 'dashed'
 
+        data['label'] = data['requirement']
+
+        problems = ", ".join(ann.failed_checks(data).keys())
+        if problems:
+            data['label'] += ' (%s)' % problems
+
+    # Set colors and labels for nodes
     for package in graph.node:
         data = graph.node[package]
-        if 'latest' in data:
-            data['color'] = '#0000bb'
+        for check in ann.failed_checks(data):
+            if check in _dot_colors:
+                data['color'] = _dot_colors[check]
+
+        data['label'] = data['as_requirement']
+
+        problems = ", ".join(ann.failed_checks(data).keys())
+        if problems:
+            data['label'] += ' (%s)' % problems
+
+        if package in graph.graph['query packages']:
+            data['shape'] = 'box'
 
     dot = nx.to_pydot(graph)
+
+    # Set graph title (only works after conversion)
+    dot.set_label(" ".join((
+        "Dependency tree rooted at square node(s)"
+        "\nChecked for:",
+        ', '.join(ann.graph_checks(graph)),
+    )))
     dot.set_rankdir('LR')
     print(dot.to_string())
-
-
-def graphml(graph):
-    # GraphML doesn't know how to serialize lists, so we
-    # convert them to strings.
-    copy = nx.DiGraph(graph)
-    for source, dest, data in copy.edges_iter(data=True):
-        data['specs'] = str(data['specs'])
-    for line in nx.generate_graphml(copy):
-        print(line)
 
 
 def json(graph):

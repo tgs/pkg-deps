@@ -15,71 +15,54 @@ __all__ = [
 ]
 
 
-def format_specs(specs):
-    if not specs:
-        return 'any'
-    return ','.join(''.join(parts) for parts in specs)
-
-
-def default_req_info(req):
-    # return dict of info about a requirement
-    return {
-        'label': format_specs(req.specs),
-        'is_pin': any(eq == '==' for eq, version in req.specs),
-        'specs': req.specs,
-        'project_name': req.project_name,
-    }
-
-
-def default_dist_info(dist):
-    return {
-        'label': str(dist),
-        'version': dist.version,
-    }
-
-
-def collect_dependencies(package,
-                         req_info=default_req_info,
-                         dist_info=default_dist_info,
-                         graph=None):
+def collect_dependencies(package, graph=None):
     """
     Consult setuptools for dependencies of a package, returning  a graph.
 
     Parameters:
         package - the name of the package to use as the root of
             the dependency tree.
-        req_info - optional single-argument function,
-            pkg_resources.Requirement -> dict, that sets the attributes
-            of the edges linking package nodes.  Default is
-            ``default_req_info``.
-        dist_info - optional single-argument function,
-            pkg_resources.DistInfoDistribution -> dict, that
-            sets the node attributes in the graph.  Default is
-            ``default_dist_info``.
         graph - optional networkx.DiGraph to update, otherwise a new
             one is created.
+
+    Returns:
+        A networkx.DiGraph with nodes and edges representing the dependencies
+        downstream of the given package.  The nodes' keys are "requirement
+        strings" like you might find in requirements.txt - for instance
+        ``lxml==3.2.4``.  The nodes also have an attribute, ``as_requirement``,
+        that holds the same string (so you can rename the nodes without losing
+        information).  The edges have an attribute ``requirement`` that is the
+        canonical form of the exact requirement one package used to depend on
+        another.  "Canonical" means that, for example, version numbers are
+        sorted: 'Django<1.7,>=1.6' becomes 'Django>=1.6,<1.7'.
+
+    See also:
+        networkx.relabel_nodes
     """
     if not graph:
         graph = nx.DiGraph()
 
-    def find_reqs(lib_name):
+    def find_deps(lib_name):
         dist = pkg_resources.get_distribution(lib_name)
-        name = dist.project_name.lower()
+        as_req = str(dist.as_requirement())  # e.g. 'lxml==3.2.4'
 
-        if name not in graph.node:
+        if as_req not in graph.node:
             graph.add_node(
-                name,
-                **dist_info(dist))
+                as_req,
+                as_requirement=as_req,
+            )
 
-        for req in dist.requires():
-            req_name = find_reqs(req.project_name)
+        for dependency in dist.requires():
+            dep_name = find_deps(dependency.project_name)
 
             graph.add_edge(
-                name,
-                req_name,
-                **req_info(req))
+                as_req,
+                dep_name,
+                requirement=str(dependency),
+            )
 
-        return name
+        return as_req
 
-    top_node = find_reqs(package)
+    top_node = find_deps(package)
+    graph.graph.setdefault('query packages', []).append(top_node)
     return (graph, top_node)

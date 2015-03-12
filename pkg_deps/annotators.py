@@ -1,4 +1,5 @@
 import logging
+from pkg_resources import Requirement
 import re
 import subprocess
 
@@ -6,6 +7,43 @@ import networkx as nx
 
 
 logger = logging.getLogger(__name__)
+
+
+str_types = (type(u''), type(b''))
+
+
+def find_matching_node(graph, requirement):
+    # Could certainly make this faster, but maybe that's not important?
+    # First off, cache parsed versions of all the nodes in the graph...
+
+    orig = requirement
+
+    if type(requirement) in str_types:
+        requirement = Requirement.parse(requirement)
+
+    for n in graph:
+        (name, ver) = n.split('==')
+        if requirement.key == name.lower() and ver in requirement:
+            return n
+
+    raise ValueError("Couldn't find any packages matching %s" % orig)
+
+
+def mark_check_failed(obj, check_name, message=''):
+    fails = obj.setdefault('failed_checks', {})
+    fails[check_name] = message
+
+
+def failed_checks(obj):
+    return obj.get('failed_checks', {})
+
+
+def mark_graph_checked(graph, check_name):
+    graph.graph.setdefault('checks', []).append(check_name)
+
+
+def graph_checks(graph):
+    return graph.graph.get('checks', [])
 
 
 def add_available_updates(graph):
@@ -41,16 +79,18 @@ def add_available_updates(graph):
         package, current, latest = match.groups()
 
         name = package.lower()
-        data = graph.node.get(name)
-
-        if not data:
+        try:
+            node = find_matching_node(graph, name)
+        except ValueError:
             logger.info("Skipping outdated package %s,"
                         " not already in dep graph",
                         name)
             continue
 
-        data['latest'] = latest
-        data['label'] = '%s (latest: %s)' % (data['label'], latest)
+        mark_check_failed(graph.node[node], 'outdated',
+                          message='latest is %s' % latest)
+
+    mark_graph_checked(graph, 'outdated')
 
     return graph
 
@@ -66,20 +106,22 @@ def check_dag(graph):
     for nodelist in cycles:
         for i in range(len(nodelist)):
             # -1 = index of last element in nodelist
-            graph[nodelist[i - 1]][nodelist[i]]['error_cycle'] = 1
+            mark_check_failed(graph[nodelist[i - 1]][nodelist[i]], 'cycle')
+
+    mark_graph_checked(graph, 'cycle')
 
 
 def should_pin_precisely(graph, top_packages):
     """
     Annotate requirements from top packages that aren't pinned (==).
 
-    This sets ``error_not_precise=True`` in the edge data, and
-    modifies the edge label.
+    This sets the check "not precise".
     """
     for src, dest, data in graph.out_edges(top_packages, data=True):
-        if not data['is_pin']:
-            data['error_not_precise'] = True
-            data['label'] = 'PIN NOT PRECISE (%s)' % data['label']
+        if '==' not in data['requirement']:
+            mark_check_failed(data, 'not precise', data['requirement'])
+
+    mark_graph_checked(graph, 'not precise')
 
 
 def should_pin_all(graph, top_packages):
@@ -87,8 +129,11 @@ def should_pin_all(graph, top_packages):
     Add missing requirements from top packages to "grandchild" dependencies.
 
     If prj_A depends on B, which depends on C, but prj_A hasn't declared
-    a dependency on C, this adds that edge to the graph, with the edge
-    attribute ``error_indirect=True`` and an alarming label.
+    a dependency on C, this adds that edge to the graph, and sets the
+    check "missing pin" failed on it.
+
+    This actually looks at *all* descendants, including ones more than two
+    "generations" away.
     """
 
     for package in top_packages:
@@ -99,6 +144,10 @@ def should_pin_all(graph, top_packages):
                 graph.add_edge(
                     package,
                     dest,
-                    error_indirect=True,
-                    is_pin=True,
-                    label='MISSING PIN (==%s)' % node_data['version'])
+                    requirement=dest)
+                mark_check_failed(
+                    graph[package][dest],
+                    'missing pin',
+                    node_data['as_requirement'])
+
+    mark_graph_checked(graph, 'missing pin')
