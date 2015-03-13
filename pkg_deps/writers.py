@@ -22,7 +22,14 @@ def human(graph):
     print("# ", "   ".join(graph.graph['query packages']))
     print("# Checked for:", ", ".join(ann.graph_checks(graph)))
 
-    for pkg in nx.topological_sort(graph, sorted(graph)):
+    packages = sorted(graph)
+    try:
+        packages = nx.topological_sort(graph, packages)
+    except nx.exception.NetworkXUnfeasible:
+        # Can happen if graph is cyclic; we've already warned by now.
+        pass
+
+    for pkg in packages:
         node_data = graph.node[pkg]
 
         print(pkg, human_format_problems(node_data))
@@ -37,7 +44,7 @@ def human(graph):
 _dot_colors = {
     'not precise': '#bb0000',
     'missing pin': '#bb6600',
-    'cycle': '#bb0066',
+    'cyclic dependency': '#bb0066',
     'outdated': '#0000bb',
 }
 

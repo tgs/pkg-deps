@@ -106,9 +106,9 @@ def check_dag(graph):
     for nodelist in cycles:
         for i in range(len(nodelist)):
             # -1 = index of last element in nodelist
-            mark_check_failed(graph[nodelist[i - 1]][nodelist[i]], 'cycle')
+            mark_check_failed(graph[nodelist[i - 1]][nodelist[i]], 'cyclic dependency')
 
-    mark_graph_checked(graph, 'cycle')
+    mark_graph_checked(graph, 'cyclic dependency')
 
 
 def should_pin_precisely(graph, top_packages):

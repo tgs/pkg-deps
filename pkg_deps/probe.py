@@ -21,6 +21,8 @@ def find_dependencies(packages):
         as_req = str(dist.as_requirement())  # e.g. 'lxml==3.2.4'
 
         if as_req not in nodes:
+            nodes.add(as_req)
+
             for dependency in dist.requires():
                 dep_name = find_deps(dependency.project_name)
 
@@ -29,8 +31,6 @@ def find_dependencies(packages):
                     str(dependency),
                     dep_name,
                 ))
-
-            nodes.add(as_req)
 
         return as_req
 
