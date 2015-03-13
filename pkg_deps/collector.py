@@ -6,21 +6,20 @@ installed the packages you're insterested in.  In particular, you must
 also install the top-level package (Django project, for example).
 """
 import pkg_resources
+import pickle
+import subprocess
 
 import networkx as nx
 
-
-__all__ = [
-    'collect_dependencies',
-]
+from pkg_deps import probe
 
 
-def collect_dependencies(package, graph=None):
+def collect_dependencies_here(packages, graph=None):
     """
     Consult setuptools for dependencies of a package, returning  a graph.
 
     Parameters:
-        package - the name of the package to use as the root of
+        packages - the names of the packages to use as the root of
             the dependency tree.
         graph - optional networkx.DiGraph to update, otherwise a new
             one is created.
@@ -39,30 +38,48 @@ def collect_dependencies(package, graph=None):
     See also:
         networkx.relabel_nodes
     """
+    return dependencies_to_graph(
+        *probe.find_dependencies(packages),
+        graph=graph)
+
+
+def collect_dependencies_elsewhere(python, packages, graph=None):
+    deps = run_probe(python, packages)
+    return dependencies_to_graph(*deps, graph=graph)
+
+
+def run_probe(python, packages):
+    # Send probe.py to the target python as a stream,
+    # and read back the pickled package information!
+    probe_stream = pkg_resources.resource_stream('pkg_deps', 'probe.py')
+
+    proc = subprocess.Popen(
+        [python, '-', '--pickle'] + list(packages),
+        stdin=probe_stream,
+        stdout=subprocess.PIPE,
+    )
+
+    output = proc.communicate()[0]
+
+    if proc.wait() != 0:
+        raise RuntimeError("Problem executing probe with %s" % python)
+
+    return pickle.loads(output)
+
+
+def dependencies_to_graph(top_nodes, nodes, edges, graph=None):
     if not graph:
         graph = nx.DiGraph()
 
-    def find_deps(lib_name):
-        dist = pkg_resources.get_distribution(lib_name)
-        as_req = str(dist.as_requirement())  # e.g. 'lxml==3.2.4'
+    for node in nodes:
+        if node not in graph:
+            graph.add_node(node, as_requirement=node)
 
-        if as_req not in graph.node:
-            graph.add_node(
-                as_req,
-                as_requirement=as_req,
-            )
+    for source, requirement, target in edges:
+        graph.add_edge(
+            source,
+            target,
+            requirement=requirement)
 
-        for dependency in dist.requires():
-            dep_name = find_deps(dependency.project_name)
-
-            graph.add_edge(
-                as_req,
-                dep_name,
-                requirement=str(dependency),
-            )
-
-        return as_req
-
-    top_node = find_deps(package)
-    graph.graph.setdefault('query packages', []).append(top_node)
-    return (graph, top_node)
+    graph.graph.setdefault('query packages', []).extend(top_nodes)
+    return (graph, top_nodes)
