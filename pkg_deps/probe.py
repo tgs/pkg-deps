@@ -53,7 +53,9 @@ if __name__ == '__main__':
 
     deps = find_dependencies(args)
 
+    out = getattr(sys.stdout, 'buffer', sys.stdout)
+
     if should_pickle:
-        pickle.dump(deps, sys.stdout, protocol=0)
+        pickle.dump(deps, out, protocol=0)
     else:
         pprint.pprint(deps)

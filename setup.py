@@ -15,4 +15,5 @@ setup(
         ],
     },
     test_suite='tests.tests',
+    zip_safe=False,
 )

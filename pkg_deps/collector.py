@@ -49,13 +49,12 @@ def collect_dependencies_elsewhere(python, packages, graph=None):
 
 
 def run_probe(python, packages):
-    # Send probe.py to the target python as a stream,
-    # and read back the pickled package information!
-    probe_stream = pkg_resources.resource_stream('pkg_deps', 'probe.py')
+    # Could do this, would maybe be zip-safe, but it's annoying for debugging.
+    #probe_stream = pkg_resources.resource_stream('pkg_deps', 'probe.py')
+    # And then stdin=probe_stream.
 
     proc = subprocess.Popen(
-        [python, '-', '--pickle'] + list(packages),
-        stdin=probe_stream,
+        [python, probe.__file__, '--pickle'] + list(packages),
         stdout=subprocess.PIPE,
     )
 
