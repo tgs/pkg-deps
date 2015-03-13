@@ -1,4 +1,8 @@
+import os
 from pkg_resources import Requirement
+import shutil
+import subprocess
+import tempfile
 import unittest
 
 import networkx as nx
@@ -26,7 +30,7 @@ def add_edge(graph, pkg, req_str):
     graph.add_edge(pkg, dest, requirement=req_str)
 
 
-class MissingPinsTestCase(unittest.TestCase):
+class UnitTestCase(unittest.TestCase):
     def test_precise_pin(self):
         graph = nx.DiGraph()
         prj = add_node(graph, 'prj', '1.0')
@@ -93,23 +97,84 @@ class MissingPinsTestCase(unittest.TestCase):
 
         ann.check_dag(graph)
 
-        self.assertIn('cycle', ann.failed_checks(graph[seeing][believing]))
-        self.assertIn('cycle', ann.failed_checks(graph[believing][seeing]))
-        self.assertIn('cycle', ann.failed_checks(graph[narcissism][narcissism]))
+        self.assertIn('cyclic dependency',
+                      ann.failed_checks(graph[seeing][believing]))
+        self.assertIn('cyclic dependency',
+                      ann.failed_checks(graph[believing][seeing]))
+        self.assertIn('cyclic dependency',
+                      ann.failed_checks(graph[narcissism][narcissism]))
 
     def test_find_matching_node(self):
         graph = nx.DiGraph()
-        Things = add_node(graph, 'Things', '1.0')
+        add_node(graph, 'Things', '1.0')
 
         self.assertEqual('Things==1.0',
                          ann.find_matching_node(graph, 'things>0.5'))
 
     def test_find_matching_node_fail(self):
         graph = nx.DiGraph()
-        Things = add_node(graph, 'Things', '1.0')
+        add_node(graph, 'Things', '1.0')
 
         try:
             ann.find_matching_node(graph, 'STUFF>0.5')
             self.fail("Should have gotten ValueError")
         except ValueError:
             pass
+
+
+class IntegrationTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.test_area = tempfile.mkdtemp()
+
+        cls.test_env = os.path.join(cls.test_area, 'env')
+        cls.test_pip = os.path.join(cls.test_env, 'bin', 'pip')
+        cls.test_python = os.path.join(cls.test_env, 'bin', 'python')
+
+        cls.integration_dir = os.path.join(
+            os.path.dirname(__file__), 'integration')
+
+        subprocess.check_call(['virtualenv', '-q', cls.test_env])
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.test_area)
+
+    def test_loop(self):
+        "Test that a dependency loop is correctly identified"
+
+        loopA_dir = os.path.join(self.integration_dir, 'loopA')
+        loopB_dir = os.path.join(self.integration_dir, 'loopB')
+
+        subprocess.check_call(
+            [self.test_pip, 'install', '-q', '--no-deps', loopA_dir])
+
+        subprocess.check_call(
+            [self.test_pip, 'install', '-q', '--no-deps', loopB_dir])
+
+        result = subprocess.check_output(
+            ['pkg_deps', '--target-python', self.test_python, 'loopA'])
+
+        self.assertIn(
+            'depends on loopB (loopB==1.0 is installed) - cycl',
+            result.decode('utf-8'))
+
+    def test_normalization(self):
+        "Test that _ vs - and CAPS vs lower are dealt with by the graph maker"
+        for pkg in ['normalization-top',
+                    'Normalization_Foo',
+                    'normalization-bar']:
+            subprocess.check_call(
+                [self.test_pip, 'install', '-q', '--no-deps',
+                 os.path.join(self.integration_dir, pkg)])
+
+        result = subprocess.check_output(
+            ['pkg_deps', '--target-python', self.test_python,
+             'normalization-top'])
+
+        lines = result.decode('utf-8').splitlines()
+
+        # top depends on both foo and bar, those are the only deps.
+        self.assertEqual(2, len([line
+                                 for line in lines
+                                 if 'depends on' in line]))

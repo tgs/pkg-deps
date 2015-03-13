@@ -5,7 +5,6 @@ To work, these functions need to be run within a virtualenv where you've
 installed the packages you're insterested in.  In particular, you must
 also install the top-level package (Django project, for example).
 """
-import pkg_resources
 import pickle
 import subprocess
 
@@ -48,13 +47,18 @@ def collect_dependencies_elsewhere(python, packages, graph=None):
     return dependencies_to_graph(*deps, graph=graph)
 
 
+def _not_pyc(path):
+    "So we can use probe.__file__: strip c off of .pyc"
+    return path.rstrip('c')
+
+
 def run_probe(python, packages):
     # Could do this, would maybe be zip-safe, but it's annoying for debugging.
     #probe_stream = pkg_resources.resource_stream('pkg_deps', 'probe.py')
     # And then stdin=probe_stream.
 
     proc = subprocess.Popen(
-        [python, probe.__file__, '--pickle'] + list(packages),
+        [python, _not_pyc(probe.__file__), '--pickle'] + list(packages),
         stdout=subprocess.PIPE,
     )
 
