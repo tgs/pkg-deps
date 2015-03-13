@@ -1,3 +1,4 @@
+from __future__ import print_function
 import json as _json
 import networkx as nx
 from networkx.readwrite.json_graph import node_link
