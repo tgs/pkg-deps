@@ -16,6 +16,7 @@ if [ ! -f toxenv/bin/tox ]; then
 	pip install tox
 else
 	echo "Re-using tox virtualenv"
+	source toxenv/bin/activate
 fi
 
 tox "$@"
