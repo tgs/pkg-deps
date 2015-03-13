@@ -9,7 +9,7 @@ if sys.version_info < (3, 2):
 
 setup(
     name="pkg-deps",
-    version="0.3",
+    version="0.4",
     packages=find_packages(),
     install_requires=['pydot3k', 'networkx', 'click'],
     tests_require=tests_require,
