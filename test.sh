@@ -2,11 +2,9 @@
 
 set -e
 
-echo "Enabling Python 2.7, 3.3, 3.4"
-
-export PATH="$PATH:/opt/python-2.7/bin"
-source /opt/rh/python33/enable
-source /opt/python-3.4/activate.sh
+which python2.7
+which python3.3
+which python3.4
 
 if [ ! -f toxenv/bin/tox ]; then
 	echo "Making virtualenv to run tox"
