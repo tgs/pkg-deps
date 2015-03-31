@@ -1,4 +1,4 @@
-# `pkg_deps` - print dependency info in graph form.
+# Print dependency info in graph form
 
 `pkg_deps` is a tool to examine dependency information about installed Python
 packages, and render it in a variety of ways.  Various checks can also be run.
