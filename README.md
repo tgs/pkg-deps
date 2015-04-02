@@ -2,14 +2,14 @@
 
 `pkg_deps` is a tool to examine dependency information about installed Python
 packages, and render it in a variety of ways.  Various checks can also be run.
-As of version 0.4, the output formats include:
+As of version 0.5, the output formats include:
 
 * dot, for rendering with GraphViz,
 * human-readable text output, and
 * JSON, for further processing with automated tools (including re-loading
-  and combining dependency graphs by this tool, soon!)
+  and combining dependency graphs by this tool!)
 
-The checks it can run include (again, as of 0.4):
+The checks it can run include (again, as of 0.5):
 
 * finding dependency loops,
 * finding outdated packages,
