@@ -6,11 +6,17 @@ installed the packages you're insterested in.  In particular, you must
 also install the top-level package (Django project, for example).
 """
 import ast
+import json
+import logging
 import subprocess
 
 import networkx as nx
+from networkx.readwrite.json_graph import node_link
 
 from pkg_deps import probe
+
+
+logger = logging.getLogger(__name__)
 
 
 def collect_dependencies_here(packages, graph=None):
@@ -86,3 +92,32 @@ def dependencies_to_graph(top_nodes, nodes, edges, graph=None):
 
     graph.graph.setdefault('query packages', []).extend(top_nodes)
     return (graph, top_nodes)
+
+
+def combine_json_graphs(filenames):
+    if not filenames:
+        return nx.DiGraph()
+
+    graphs = []
+    for fn in filenames:
+        with open(fn, 'r') as json_file:
+            graph_data = json.load(json_file)
+            graphs.append(node_link.node_link_graph(graph_data))
+    composed = nx.compose_all(graphs)
+
+    # TODO: try to merge edge annotations that may differ between graphs
+    query_packages = sum([G.graph['query packages'] for G in graphs], [])
+    composed.graph['query packages'] = query_packages
+
+    check_lists = [G.graph['checks'] for G in graphs]
+    last = None
+    for check_list in check_lists:
+        # TODO test this
+        if last is not None and set(check_list) != last:
+            logger.warning("Loading several dependency graphs, but they were"
+                           " run with different consistency checks - edge"
+                           " annotations may be incorrect!")
+
+        last = set(check_list)
+
+    return composed

@@ -1,3 +1,4 @@
+import json
 import os
 from pkg_resources import Requirement
 import shutil
@@ -178,3 +179,37 @@ class IntegrationTestCase(unittest.TestCase):
         self.assertEqual(2, len([line
                                  for line in lines
                                  if 'depends on' in line]))
+
+    def test_combining_json(self):
+        "Test that we can combine JSON output from multiple runs"
+
+        # Install two packages in a test virtualenv,
+        # and separately run pkg_deps --json on each of them.
+        json_files = []
+        for num, pkg in enumerate(['Normalization_Foo',
+                                   'normalization-bar']):
+            subprocess.check_call(
+                [self.test_pip, 'install', '-q', '--no-deps',
+                 os.path.join(self.integration_dir, pkg)])
+
+            json_file = os.path.join(self.test_area, '%d.json' % num)
+            with open(json_file, 'wb') as json_out:
+                subprocess.check_call(
+                    ['pkg_deps',
+                     '--target-python', self.test_python,
+                     '--json', pkg],
+                    stdout=json_out)
+            json_files.append(json_file)
+
+        # Combine the results from the two runs, and make sure
+        # it looks like we want it to.
+        result = subprocess.check_output(
+            ['pkg_deps', '--json', '--load-json'] + json_files)
+
+        combined = json.loads(result.decode())
+        graph_data = dict(combined['graph'])
+        self.assertEqual(set(graph_data['query packages']),
+                         set(['Normalization-Foo==1.0',
+                              'normalization-bar==1.0']))
+
+        self.assertEqual(len(combined['links']), 0)

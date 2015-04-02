@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import sys
 
 import click
 
@@ -25,13 +26,22 @@ _log_levels = [
               " dependency information.  PATH is the path to the python"
               " executable itself.  Incompatible with --outdated for now.""")
 @click.option('--human', 'format', flag_value='human', default=True,
-              help="Print results in simple human-readable form.")
+              help="Print results in simple human-readable form. (DEFAULT)")
 @click.option('--dot', 'format', flag_value='dot',
               help="Write in the GraphViz 'dot' format, for direct"
               " visualization.")
 @click.option('--json', 'format', flag_value='json',
               help="Write in a 'node-link' JSON format, for use with other"
               " Python tools or d3.js.")
+@click.option('--load-json', 'argument_type', flag_value='json',
+              help="Treat arguments as JSON files instead of package names;"
+              " combine them, DON'T RUN any checks, and print the"
+              " resulting graph.")
+@click.option('--packages', 'argument_type', flag_value='packages',
+              default=True,
+              help="Treat arguments as package names; find their"
+              " dependencies, run any checks, and print the resulting graph."
+              " (DEFAULT)")
 @click.option('--precise-pin', is_flag=True,
               help="Annotate packages that the top-level package depends on"
               " directly without exactly pinning the version (xyz==N.N).")
@@ -42,7 +52,7 @@ _log_levels = [
               help="Control the logging level.")
 @click.option('--quiet', '-q', count=True,
               help="Control the logging level.")
-def main(packages, outdated, target_python, format, precise_pin,
+def main(packages, outdated, target_python, format, argument_type, precise_pin,
          should_pin_all, verbose, quiet):
     """Print dependencies and latest versions available."""
 
@@ -52,23 +62,36 @@ def main(packages, outdated, target_python, format, precise_pin,
         format='%(levelname)s: %(message)s',
         level=_log_levels[min(log_level_requested, len(_log_levels) - 1)])
 
-    if target_python:
-        graph, good_package_names = collector.collect_dependencies_elsewhere(
-            target_python, packages)
+    if argument_type == 'packages':
+        if target_python:
+            if outdated:
+                click.secho("--outdated is incompatible with --target-python"
+                            " for now - sorry!", fg='red')
+                # We could use the target python to run
+                # "python -m pip list --outdated"
+                # TODO!
+                sys.exit(1)
+            graph, good_package_names = collector.collect_dependencies_elsewhere(
+                target_python, packages)
+        else:
+            graph, good_package_names = collector.collect_dependencies_here(
+                packages)
+
+        annotators.check_dag(graph)
+
+        if outdated:
+            annotators.add_available_updates(graph)
+
+        if precise_pin:
+            annotators.should_pin_precisely(graph, good_package_names)
+
+        if should_pin_all:
+            annotators.should_pin_all(graph, good_package_names)
+
     else:
-        graph, good_package_names = collector.collect_dependencies_here(
-            packages)
+        assert argument_type == 'json'
+        graph = collector.combine_json_graphs(packages)
 
-    annotators.check_dag(graph)
-
-    if outdated:
-        annotators.add_available_updates(graph)
-
-    if precise_pin:
-        annotators.should_pin_precisely(graph, good_package_names)
-
-    if should_pin_all:
-        annotators.should_pin_all(graph, good_package_names)
 
     getattr(writers, format)(graph)
 
