@@ -6,7 +6,11 @@ which python2.7
 which python3.3
 which python3.4
 
-if [ ! -f toxenv/bin/tox ]; then
+TOX=`which tox || true`
+
+if [ ! -z "$TOX" ]; then
+	echo "Already have tox: $TOX"
+elif [ ! -f toxenv/bin/tox ]; then
 	echo "Making virtualenv to run tox"
 	rm -rf toxenv
 	virtualenv toxenv
