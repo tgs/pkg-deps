@@ -41,21 +41,8 @@ def find_dependencies(packages):
 
 if __name__ == '__main__':
     import sys
-    import pickle
     import pprint
     args = list(sys.argv[1:])
-
-    should_pickle = False
-
-    if args[0] == '--pickle':
-        should_pickle = True
-        args.pop(0)
-
     deps = find_dependencies(args)
-
-    out = getattr(sys.stdout, 'buffer', sys.stdout)
-
-    if should_pickle:
-        pickle.dump(deps, out, protocol=0)
-    else:
-        pprint.pprint(deps)
+    # TODO: handle package names with non-ascii chars
+    pprint.pprint(deps)

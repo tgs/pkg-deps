@@ -5,7 +5,7 @@ To work, these functions need to be run within a virtualenv where you've
 installed the packages you're insterested in.  In particular, you must
 also install the top-level package (Django project, for example).
 """
-import pickle
+import ast
 import subprocess
 
 import networkx as nx
@@ -58,7 +58,7 @@ def run_probe(python, packages):
     # And then stdin=probe_stream.
 
     proc = subprocess.Popen(
-        [python, _not_pyc(probe.__file__), '--pickle'] + list(packages),
+        [python, _not_pyc(probe.__file__)] + list(packages),
         stdout=subprocess.PIPE,
     )
 
@@ -67,7 +67,7 @@ def run_probe(python, packages):
     if proc.wait() != 0:
         raise RuntimeError("Problem executing probe with %s" % python)
 
-    return pickle.loads(output)
+    return ast.literal_eval(output.decode())  # default encoding...
 
 
 def dependencies_to_graph(top_nodes, nodes, edges, graph=None):
