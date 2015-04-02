@@ -21,23 +21,23 @@ _log_levels = [
 @click.argument('packages', nargs=-1, required=True)
 @click.option('--outdated', is_flag=True, help="Look for outdated packages.")
 @click.option('--target-python', type=click.Path(), default=None,
-              help="""Look in this Python installation (i.e. virtualenv)
-              to find dependency information.  PATH is the path to the python
-              executable itself.  Incompatible with --outdated for now.""")
+              help="Look in this Python installation (i.e. virtualenv) to find"
+              " dependency information.  PATH is the path to the python"
+              " executable itself.  Incompatible with --outdated for now.""")
 @click.option('--human', 'format', flag_value='human', default=True,
               help="Print results in simple human-readable form.")
 @click.option('--dot', 'format', flag_value='dot',
-              help="""Write in the GraphViz 'dot' format, for direct
-              visualization.""")
+              help="Write in the GraphViz 'dot' format, for direct"
+              " visualization.")
 @click.option('--json', 'format', flag_value='json',
-              help="""Write in a 'node-link' JSON format, for use with other
-              Python tools or d3.js.""")
+              help="Write in a 'node-link' JSON format, for use with other"
+              " Python tools or d3.js.")
 @click.option('--precise-pin', is_flag=True,
-              help="""Annotate packages that the top-level package depends on
-              directly without exactly pinning the version (xyz==N.N).""")
+              help="Annotate packages that the top-level package depends on"
+              " directly without exactly pinning the version (xyz==N.N).")
 @click.option('--should-pin-all', is_flag=True,
-              help="""Annotate packages that the top-level package depends on
-              indirectly but not directly.""")
+              help="Annotate packages that the top-level package depends on"
+              " indirectly but not directly.")
 @click.option('--verbose', '-v', count=True,
               help="Control the logging level.")
 @click.option('--quiet', '-q', count=True,
