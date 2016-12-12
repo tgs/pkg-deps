@@ -25,6 +25,8 @@ _log_levels = [
               help="Look in this Python installation (i.e. virtualenv) to find"
               " dependency information.  PATH is the path to the python"
               " executable itself.  Incompatible with --outdated for now.""")
+@click.option('--unmet', is_flag=True,
+              help="Look for unmet dependencies and version requirements.")
 @click.option('--human', 'format', flag_value='human', default=True,
               help="Print results in simple human-readable form. (DEFAULT)")
 @click.option('--dot', 'format', flag_value='dot',
@@ -52,7 +54,8 @@ _log_levels = [
               help="Control the logging level.")
 @click.option('--quiet', '-q', count=True,
               help="Control the logging level.")
-def main(packages, outdated, target_python, format, argument_type, precise_pin,
+def main(packages, outdated, target_python, unmet,
+         format, argument_type, precise_pin,
          should_pin_all, verbose, quiet):
     """Print dependencies and latest versions available."""
 
@@ -78,6 +81,9 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
                 packages)
 
         annotators.check_dag(graph)
+
+        if unmet:
+            annotators.dependencies_should_be_met(graph)
 
         if outdated:
             annotators.add_available_updates(graph)

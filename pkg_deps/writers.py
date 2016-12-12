@@ -46,6 +46,7 @@ _dot_colors = {
     'missing pin': '#bb6600',
     'cyclic dependency': '#bb0066',
     'outdated': '#0000bb',
+    'unmet': '#6633bb',
 }
 
 

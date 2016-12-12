@@ -46,6 +46,20 @@ def graph_checks(graph):
     return graph.graph.get('checks', [])
 
 
+def dependencies_should_be_met(graph):
+    for source, dest, data in graph.edges_iter(data=True):
+        requirement = data['requirement']
+        if type(requirement) in str_types:
+            requirement = Requirement.parse(requirement)
+
+        name, ver = dest.split('==')
+        if ver not in requirement:
+            mark_check_failed(data, 'unmet',
+                              '%s is not installed' % data['requirement'])
+
+    mark_graph_checked(graph, 'unmet')
+
+
 def add_available_updates(graph):
     """
     Add outdated package info to a dependency graph.

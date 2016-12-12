@@ -105,6 +105,19 @@ class UnitTestCase(unittest.TestCase):
         self.assertIn('cyclic dependency',
                       ann.failed_checks(graph[narcissism][narcissism]))
 
+    def test_deps_should_be_met(self):
+        graph = nx.DiGraph()
+
+        wakefulness = add_node(graph, 'wakefulness', '1.1')
+        coffee = add_node(graph, 'coffee', '0.7')
+        add_edge(graph, wakefulness, 'coffee')
+
+        graph[wakefulness][coffee]['requirement'] = 'coffee>1'
+
+        ann.dependencies_should_be_met(graph)
+        self.assertIn('unmet',
+                      ann.failed_checks(graph[wakefulness][coffee]))
+
     def test_find_matching_node(self):
         graph = nx.DiGraph()
         add_node(graph, 'Things', '1.0')
