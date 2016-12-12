@@ -168,7 +168,7 @@ class IntegrationTestCase(unittest.TestCase):
 
         with self.assertRaises(subprocess.CalledProcessError) as raised:
             subprocess.check_output(
-                ['pkg_deps', '--target-python', self.test_python, 'loopA'])
+                ['pkg_deps', '--python', self.test_python, 'loopA'])
 
         output = raised.exception.output
 
@@ -186,7 +186,7 @@ class IntegrationTestCase(unittest.TestCase):
                  os.path.join(self.integration_dir, pkg)])
 
         result = subprocess.check_output(
-            ['pkg_deps', '--target-python', self.test_python,
+            ['pkg_deps', '--python', self.test_python,
              'normalization-top'])
 
         lines = result.decode('utf-8').splitlines()
@@ -212,7 +212,7 @@ class IntegrationTestCase(unittest.TestCase):
             with open(json_file, 'wb') as json_out:
                 subprocess.check_call(
                     ['pkg_deps',
-                     '--target-python', self.test_python,
+                     '--python', self.test_python,
                      '--json', pkg],
                     stdout=json_out)
             json_files.append(json_file)
