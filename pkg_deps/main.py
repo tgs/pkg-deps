@@ -21,7 +21,7 @@ _log_levels = [
 @click.command()
 @click.argument('packages', nargs=-1, required=True)
 @click.option('--outdated', is_flag=True, help="Look for outdated packages.")
-@click.option('--target-python', type=click.Path(), default=None,
+@click.option('--python', '-p', type=click.Path(), default=None,
               help="Look in this Python installation (i.e. virtualenv) to find"
               " dependency information.  PATH is the path to the python"
               " executable itself.  Incompatible with --outdated for now.""")
@@ -54,7 +54,7 @@ _log_levels = [
               help="Control the logging level.")
 @click.option('--quiet', '-q', count=True,
               help="Control the logging level.")
-def main(packages, outdated, target_python, format, argument_type, precise_pin,
+def main(packages, outdated, python, format, argument_type, precise_pin,
          should_pin_all, verbose, quiet):
     """Print dependencies and latest versions available."""
 
@@ -67,7 +67,7 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
     any_problems = False
 
     if argument_type == 'packages':
-        if target_python:
+        if python:
             if outdated:
                 click.secho("--outdated is incompatible with --target-python"
                             " for now - sorry!", fg='red')
@@ -76,7 +76,7 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
                 # TODO!
                 sys.exit(1)
             graph, good_package_names = collector.collect_dependencies_elsewhere(
-                target_python, packages)
+                python, packages)
         else:
             graph, good_package_names = collector.collect_dependencies_here(
                 packages)
