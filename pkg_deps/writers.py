@@ -89,7 +89,7 @@ def dot(graph):
         if package in graph.graph['query packages']:
             data['shape'] = 'box'
 
-    dot = nx.to_pydot(graph)
+    dot = nx.nx_pydot.to_pydot(graph)
 
     # Set graph title (only works after conversion)
     dot.set_label(" ".join((
