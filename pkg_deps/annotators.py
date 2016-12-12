@@ -46,6 +46,24 @@ def graph_checks(graph):
     return graph.graph.get('checks', [])
 
 
+def dependencies_should_be_met(graph):
+    bad = False
+
+    for source, dest, data in graph.edges_iter(data=True):
+        requirement = data['requirement']
+        if type(requirement) in str_types:
+            requirement = Requirement.parse(requirement)
+
+        name, ver = dest.split('==')
+        if ver not in requirement:
+            mark_check_failed(data, 'unmet',
+                              '%s is not installed' % data['requirement'])
+            bad = True
+
+    mark_graph_checked(graph, 'unmet')
+    return bad
+
+
 def add_available_updates(graph):
     """
     Add outdated package info to a dependency graph.
@@ -110,6 +128,7 @@ def check_dag(graph):
                               'cyclic dependency')
 
     mark_graph_checked(graph, 'cyclic dependency')
+    return bool(cycles)
 
 
 def should_pin_precisely(graph, top_packages):
@@ -118,11 +137,14 @@ def should_pin_precisely(graph, top_packages):
 
     This sets the check "not precise".
     """
+    bad = False
     for src, dest, data in graph.out_edges(top_packages, data=True):
         if '==' not in data['requirement']:
             mark_check_failed(data, 'not precise', data['requirement'])
+            bad = True
 
     mark_graph_checked(graph, 'not precise')
+    return bad
 
 
 def should_pin_all(graph, top_packages):
@@ -136,11 +158,13 @@ def should_pin_all(graph, top_packages):
     This actually looks at *all* descendants, including ones more than two
     "generations" away.
     """
+    bad = False
 
     for package in top_packages:
         direct = set(dest for src, dest in graph.out_edges([package]))
         for dest in nx.descendants(graph, package):
             if dest not in direct:
+                bad = True
                 node_data = graph.node[dest]
                 graph.add_edge(
                     package,
@@ -152,3 +176,4 @@ def should_pin_all(graph, top_packages):
                     node_data['as_requirement'])
 
     mark_graph_checked(graph, 'missing pin')
+    return bad

@@ -21,7 +21,7 @@ _log_levels = [
 @click.command()
 @click.argument('packages', nargs=-1, required=True)
 @click.option('--outdated', is_flag=True, help="Look for outdated packages.")
-@click.option('--target-python', type=click.Path(), default=None,
+@click.option('--python', '-p', type=click.Path(), default=None,
               help="Look in this Python installation (i.e. virtualenv) to find"
               " dependency information.  PATH is the path to the python"
               " executable itself.  Incompatible with --outdated for now.""")
@@ -33,6 +33,8 @@ _log_levels = [
 @click.option('--json', 'format', flag_value='json',
               help="Write in a 'node-link' JSON format, for use with other"
               " Python tools or d3.js.")
+@click.option('--teamcity', 'format', flag_value='teamcity',
+              help="Write any problems as TeamCity buildProblem messages.")
 @click.option('--load-json', 'argument_type', flag_value='json',
               help="Treat arguments as JSON files instead of package names;"
               " combine them, DON'T RUN any checks, and print the"
@@ -52,9 +54,15 @@ _log_levels = [
               help="Control the logging level.")
 @click.option('--quiet', '-q', count=True,
               help="Control the logging level.")
-def main(packages, outdated, target_python, format, argument_type, precise_pin,
+def main(packages, outdated, python, format, argument_type, precise_pin,
          should_pin_all, verbose, quiet):
-    """Print dependencies and latest versions available."""
+    """
+    Search the package dependencies in a virtualenv for various problems.
+
+    By default, dependency cycles and unmet dependencies (including unmet
+    version requirements) cause an error return code and get annotated
+    in the output.
+    """
 
     log_level_requested = verbose - quiet + 2  # default is WARNING
 
@@ -62,8 +70,10 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
         format='%(levelname)s: %(message)s',
         level=_log_levels[min(log_level_requested, len(_log_levels) - 1)])
 
+    any_problems = False
+
     if argument_type == 'packages':
-        if target_python:
+        if python:
             if outdated:
                 click.secho("--outdated is incompatible with --target-python"
                             " for now - sorry!", fg='red')
@@ -72,28 +82,32 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
                 # TODO!
                 sys.exit(1)
             graph, good_package_names = collector.collect_dependencies_elsewhere(
-                target_python, packages)
+                python, packages)
         else:
             graph, good_package_names = collector.collect_dependencies_here(
                 packages)
 
-        annotators.check_dag(graph)
+        any_problems |= annotators.check_dag(graph)
+
+        any_problems |= annotators.dependencies_should_be_met(graph)
 
         if outdated:
-            annotators.add_available_updates(graph)
+            any_problems |= annotators.add_available_updates(graph)
 
         if precise_pin:
-            annotators.should_pin_precisely(graph, good_package_names)
+            any_problems |= annotators.should_pin_precisely(graph,
+                                                            good_package_names)
 
         if should_pin_all:
-            annotators.should_pin_all(graph, good_package_names)
+            any_problems |= annotators.should_pin_all(graph,
+                                                      good_package_names)
 
     else:
         assert argument_type == 'json'
         graph = collector.combine_json_graphs(packages)
 
-
     getattr(writers, format)(graph)
+    sys.exit(any_problems)
 
 
 if __name__ == '__main__':
