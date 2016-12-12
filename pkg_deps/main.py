@@ -56,7 +56,13 @@ _log_levels = [
               help="Control the logging level.")
 def main(packages, outdated, python, format, argument_type, precise_pin,
          should_pin_all, verbose, quiet):
-    """Print dependencies and latest versions available."""
+    """
+    Search the package dependencies in a virtualenv for various problems.
+
+    By default, dependency cycles and unmet dependencies (including unmet
+    version requirements) cause an error return code and get annotated
+    in the output.
+    """
 
     log_level_requested = verbose - quiet + 2  # default is WARNING
 
