@@ -10,6 +10,7 @@ if sys.version_info < (3, 2):
 setup(
     name="pkg-deps",
     version="1.0",
+    license="Public Domain",
     packages=find_packages(),
     install_requires=['pydotplus', 'networkx', 'click'],
     tests_require=tests_require,
