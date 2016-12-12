@@ -21,6 +21,9 @@ setup(
             'pkg_deps = pkg_deps.main:main',
         ],
     },
+    extras_require={
+        'teamcity': ['teamcity-messages'],
+    },
     test_suite='tests.tests',
     zip_safe=False,
 )

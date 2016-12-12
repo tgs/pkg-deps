@@ -104,3 +104,35 @@ def dot(graph):
 def json(graph):
     rep = node_link.node_link_data(graph)
     _json.dump(rep, sys.stdout, indent=2)
+
+
+def teamcity(graph):
+    import teamcity.messages
+    tc = teamcity.messages.TeamcityServiceMessages()
+
+    print("Dependency tree starting with these packages:")
+    print("   ".join(graph.graph['query packages']))
+    print("Checked for:", ", ".join(ann.graph_checks(graph)))
+
+    packages = sorted(graph)
+    try:
+        packages = nx.topological_sort(graph, packages)
+    except nx.exception.NetworkXUnfeasible:
+        # Can happen if graph is cyclic; we've already warned by now.
+        pass
+
+    for pkg in packages:
+        node_data = graph.node[pkg]
+
+        problems = human_format_problems(node_data)
+        if problems:
+            tc.buildProblem(
+                "Package %s: %s" % (pkg, problems), 'pkg_deps.package_problem')
+
+        for src, dest, data in sorted(graph.out_edges([pkg], data=True)):
+            problems = human_format_problems(data)
+            if problems:
+                tc.buildProblem(
+                    '%s depends on %s (%s is installed): %s' % (
+                        pkg, data['requirement'], dest, problems),
+                'pkg_deps.dependency_problem')

@@ -33,6 +33,8 @@ _log_levels = [
 @click.option('--json', 'format', flag_value='json',
               help="Write in a 'node-link' JSON format, for use with other"
               " Python tools or d3.js.")
+@click.option('--teamcity', 'format', flag_value='teamcity',
+              help="Write any problems as TeamCity buildProblem messages.")
 @click.option('--load-json', 'argument_type', flag_value='json',
               help="Treat arguments as JSON files instead of package names;"
               " combine them, DON'T RUN any checks, and print the"
