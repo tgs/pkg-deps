@@ -1,5 +1,6 @@
 from __future__ import print_function
 import json as _json
+import click
 import networkx as nx
 from networkx.readwrite.json_graph import node_link
 import sys
@@ -32,12 +33,17 @@ def human(graph):
     for pkg in packages:
         node_data = graph.node[pkg]
 
-        print(pkg, human_format_problems(node_data))
+        problems = click.style(human_format_problems(node_data))
+        if problems:
+            problems = click.style(problems, bold=True)
+        click.echo(" ".join([pkg, problems]))
 
         for src, dest, data in sorted(graph.out_edges([pkg], data=True)):
             problems = human_format_problems(data)
+            if problems:
+                problems = click.style(problems, bold=True)
 
-            print('  depends on %s (%s is installed) %s' % (
+            click.echo('  depends on %s (%s is installed) %s' % (
                 data['requirement'], dest, problems))
 
 
