@@ -9,7 +9,7 @@ if sys.version_info < (3, 2):
 
 setup(
     name="pkg-deps",
-    version="0.6",
+    version="1.0",
     packages=find_packages(),
     install_requires=['pydotplus', 'networkx', 'click'],
     tests_require=tests_require,
@@ -18,7 +18,7 @@ setup(
     # version isn't a concern right now
     entry_points={
         'console_scripts': [
-            'pkg_deps = pkg_deps.main:main',
+            'pkg-deps = pkg_deps.main:main',
         ],
     },
     extras_require={

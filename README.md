@@ -1,8 +1,8 @@
 # Print dependency info in graph form
 
-`pkg_deps` is a tool to examine dependency information about installed Python
+`pkg-deps` is a tool to examine dependency information about installed Python
 packages, and render it in a variety of ways.  Various checks can also be run.
-As of version 0.6, the output formats include:
+As of version 1.0, the output formats include:
 
 * human-readable text output with highlighting of problems,
 * teamcity, for specially-formatted messages that the TeamCity CI tool can
@@ -11,7 +11,7 @@ As of version 0.6, the output formats include:
 * JSON, for further processing with automated tools (including re-loading
   and combining dependency graphs by this tool!)
 
-The checks it can run include (again, as of 0.6):
+The checks it can run include (again, as of 1.0):
 
 * finding dependency loops,
 * finding unmet dependencies, including unmet version requirements,
@@ -25,6 +25,7 @@ The checks it can run include (again, as of 0.6):
 The tool has several dependencies itself, so to avoid having to install it in
 each virtualenv you want to examine, it also supports running a probe with
 a different Python binary.  For example, you could install it once using
-`pipsi` and then run it on each mini-environment that Tox creates.
+`pipsi` and then run it in your current virtualenv with `pkg-deps -p \`which
+python\``.
 
-For details on how to accomplish these things, run `pkg_deps --help`.
+For details on how to accomplish these things, run `pkg-deps --help`.

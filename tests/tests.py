@@ -168,7 +168,7 @@ class IntegrationTestCase(unittest.TestCase):
 
         with self.assertRaises(subprocess.CalledProcessError) as raised:
             subprocess.check_output(
-                ['pkg_deps', '--python', self.test_python, 'loopA'])
+                ['pkg-deps', '--python', self.test_python, 'loopA'])
 
         output = raised.exception.output
 
@@ -186,7 +186,7 @@ class IntegrationTestCase(unittest.TestCase):
                  os.path.join(self.integration_dir, pkg)])
 
         result = subprocess.check_output(
-            ['pkg_deps', '--python', self.test_python,
+            ['pkg-deps', '--python', self.test_python,
              'normalization-top'])
 
         lines = result.decode('utf-8').splitlines()
@@ -200,7 +200,7 @@ class IntegrationTestCase(unittest.TestCase):
         "Test that we can combine JSON output from multiple runs"
 
         # Install two packages in a test virtualenv,
-        # and separately run pkg_deps --json on each of them.
+        # and separately run pkg-deps --json on each of them.
         json_files = []
         for num, pkg in enumerate(['Normalization_Foo',
                                    'normalization-bar']):
@@ -211,7 +211,7 @@ class IntegrationTestCase(unittest.TestCase):
             json_file = os.path.join(self.test_area, '%d.json' % num)
             with open(json_file, 'wb') as json_out:
                 subprocess.check_call(
-                    ['pkg_deps',
+                    ['pkg-deps',
                      '--python', self.test_python,
                      '--json', pkg],
                     stdout=json_out)
@@ -220,7 +220,7 @@ class IntegrationTestCase(unittest.TestCase):
         # Combine the results from the two runs, and make sure
         # it looks like we want it to.
         result = subprocess.check_output(
-            ['pkg_deps', '--json', '--load-json'] + json_files)
+            ['pkg-deps', '--json', '--load-json'] + json_files)
 
         combined = json.loads(result.decode())
         graph_data = dict(combined['graph'])
