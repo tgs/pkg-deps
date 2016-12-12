@@ -44,7 +44,7 @@ class UnitTestCase(unittest.TestCase):
         xbox = add_node(graph, 'xbox', '360')
         add_edge(graph, prj, 'xbox==360')
 
-        ann.should_pin_precisely(graph, [prj])
+        self.assertTrue(ann.should_pin_precisely(graph, [prj]))
 
         self.assertTrue('not precise' in ann.failed_checks(graph[prj][things]))
         self.assertFalse('not precise' in ann.failed_checks(graph[prj][xbox]))
@@ -74,7 +74,7 @@ class UnitTestCase(unittest.TestCase):
 
         self.assertNotIn(floor, graph[sit])
 
-        ann.should_pin_all(graph, [sit])
+        self.assertTrue(ann.should_pin_all(graph, [sit]))
 
         # We should have found the missing pin
         self.assertIn(floor, graph[sit].keys())
@@ -96,7 +96,7 @@ class UnitTestCase(unittest.TestCase):
         add_edge(graph, seeing, "believing")
         add_edge(graph, narcissism, "narcissism")
 
-        ann.check_dag(graph)
+        self.assertTrue(ann.check_dag(graph))
 
         self.assertIn('cyclic dependency',
                       ann.failed_checks(graph[seeing][believing]))
@@ -114,7 +114,7 @@ class UnitTestCase(unittest.TestCase):
 
         graph[wakefulness][coffee]['requirement'] = 'coffee>1'
 
-        ann.dependencies_should_be_met(graph)
+        self.assertTrue(ann.dependencies_should_be_met(graph))
         self.assertIn('unmet',
                       ann.failed_checks(graph[wakefulness][coffee]))
 
@@ -166,12 +166,15 @@ class IntegrationTestCase(unittest.TestCase):
         subprocess.check_call(
             [self.test_pip, 'install', '-q', '--no-deps', loopB_dir])
 
-        result = subprocess.check_output(
-            ['pkg_deps', '--target-python', self.test_python, 'loopA'])
+        with self.assertRaises(subprocess.CalledProcessError) as raised:
+            subprocess.check_output(
+                ['pkg_deps', '--target-python', self.test_python, 'loopA'])
+
+        output = raised.exception.output
 
         self.assertIn(
             'depends on loopB (loopB==1.0 is installed) - cycl',
-            result.decode('utf-8'))
+            output.decode('utf-8'))
 
     def test_normalization(self):
         "Test that _ vs - and CAPS vs lower are dealt with by the graph maker"

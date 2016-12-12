@@ -62,6 +62,8 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
         format='%(levelname)s: %(message)s',
         level=_log_levels[min(log_level_requested, len(_log_levels) - 1)])
 
+    any_problems = False
+
     if argument_type == 'packages':
         if target_python:
             if outdated:
@@ -77,25 +79,27 @@ def main(packages, outdated, target_python, format, argument_type, precise_pin,
             graph, good_package_names = collector.collect_dependencies_here(
                 packages)
 
-        annotators.check_dag(graph)
+        any_problems |= annotators.check_dag(graph)
 
-        annotators.dependencies_should_be_met(graph)
+        any_problems |= annotators.dependencies_should_be_met(graph)
 
         if outdated:
-            annotators.add_available_updates(graph)
+            any_problems |= annotators.add_available_updates(graph)
 
         if precise_pin:
-            annotators.should_pin_precisely(graph, good_package_names)
+            any_problems |= annotators.should_pin_precisely(graph,
+                                                            good_package_names)
 
         if should_pin_all:
-            annotators.should_pin_all(graph, good_package_names)
+            any_problems |= annotators.should_pin_all(graph,
+                                                      good_package_names)
 
     else:
         assert argument_type == 'json'
         graph = collector.combine_json_graphs(packages)
 
-
     getattr(writers, format)(graph)
+    sys.exit(any_problems)
 
 
 if __name__ == '__main__':
