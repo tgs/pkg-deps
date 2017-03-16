@@ -9,7 +9,7 @@ if sys.version_info < (3, 2):
 
 setup(
     name="pkg-deps",
-    version="1.0.1",
+    version="1.0.2",
     license="Public Domain",
     description="Print dependency info in graph form and check for problems",
     long_description=open('README.md').read(),
