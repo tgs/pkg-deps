@@ -41,7 +41,7 @@ def human(graph):
         for src, dest, data in sorted(graph.out_edges([pkg], data=True)):
             problems = human_format_problems(data)
             if problems:
-                problems = click.style(problems, bold=True)
+                problems = click.style(problems, fg='red')
 
             click.echo('  depends on %s (%s is installed) %s' % (
                 data['requirement'], dest, problems))
