@@ -76,6 +76,8 @@ def add_available_updates(graph):
     is added to its node in the graph, with the latest available
     version as the value.
     """
+    bad = False  # found anything bad yet?
+
     # It might be possible to do this with
     # pip.commands.list.ListCommand.find_packages_latest_versions,
     # but that seems like a lot of trouble, especially dealing with the
@@ -107,10 +109,11 @@ def add_available_updates(graph):
 
         mark_check_failed(graph.node[node], 'outdated',
                           message='latest is %s' % latest)
+        bad = True
 
     mark_graph_checked(graph, 'outdated')
 
-    return graph
+    return bad
 
 
 def check_dag(graph):
