@@ -14,7 +14,7 @@ setup(
     url="https://github.com/tgs/pkg-deps",
     description="Print dependency info in graph form and check for problems",
     long_description=open('README.md').read(),
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     install_requires=['pydotplus', 'networkx<2', 'click'],
     tests_require=tests_require,
     # entry_points based script is really slow (0.5 seconds)
