@@ -9,13 +9,13 @@ if sys.version_info < (3, 2):
 
 setup(
     name="pkg-deps",
-    version="1.0.2",
+    version="1.0.3",
     license="Public Domain",
     url="https://github.com/tgs/pkg-deps",
     description="Print dependency info in graph form and check for problems",
     long_description=open('README.md').read(),
     packages=find_packages(),
-    install_requires=['pydotplus', 'networkx', 'click'],
+    install_requires=['pydotplus', 'networkx<2', 'click'],
     tests_require=tests_require,
     # entry_points based script is really slow (0.5 seconds)
     # might want to switch to normal script, since windows
